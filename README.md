@@ -1,4 +1,4 @@
-# airquality-hourly-wuhan
+# airquality-daily-hongkong
 # The phenomenon
 
 <!-- This is the SD5913 assignment 2 template. Everything in this file is yours to
