@@ -42,4 +42,27 @@ that disagreed.
   month and a day — a plausible picture of something that does not exist.
 ## Kept
 
+**The calendar.** I first drew the year as a single row of 31 tiles; a row can
+only ever show one month, so the shape of the year was invisible. The grid shows
+it at once — winter at the top and bottom, summer in the middle.
+
+**The six-pollutant panel**, normalised per pollutant. On one linear scale CO sat
+near 0.5 and PM10 near 40, so CO came out a solid black column.
+
+**One year only.** Pooling all thirteen years into one grid threw away the fact
+that Hong Kong's PM2.5 fell from about 160 µg/m³ in 2014 to about 31 in 2025.
+One real day per tile beats a decade averaged into a blur.
+
 ## Rejected
+
+**Plotly's own animation frames** — its play button redraws the whole figure per
+step, so the crossing was a hard jump and the colour bar flickered. I wanted it
+to move, not step: a JavaScript loop now interpolates the mean and slides the
+highlight band with easing.
+
+**A screenshot as the still picture** — that is a photograph of a web page, and
+it cannot be reproduced on the marker's machine. `plot.py` redraws both panels in
+matplotlib instead; making the two agree is what exposed the `monthly()` bug.
+
+**Pretending the file was clean.** Nine rows have no PM2.5 and three December
+days are missing. They are drawn empty, not filled in with a guess.
