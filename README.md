@@ -30,13 +30,22 @@ before anything is drawn — the CSV arrives as text, and a plot built from stri
 is empty and silent.
 ## What the picture shows
 
-<!-- Two or three sentences. Including what it hides: every transformation throws
-something away, and naming what yours threw away is the easiest way to sound like
-you know what you did. -->
+Winter sits at the top and bottom of the grid, summer in the middle. December is
+the dirtiest month at 48 µg/m³, September the cleanest at 21. Six pollutants share
+the right-hand panel as monthly means.
 
+**What it hides.** Each tile is a daily *mean*, so a rush-hour spike and a calm
+afternoon average to the same square — the peak is gone. Three days at the end of
+December have no reading and show up as blank cells. The year is one file's year,
+which discards the wide gap between roadside and background stations. And the six
+pollutants live on different scales, so each is normalised to its own range: the
+colour bar reads *relative level*, and absolute values survive only in the hover
+text of the interactive version.
 ## Run it
 
 ```
-uv run fetch.py
-uv run plot.py
+uv run fetch.py     # writes data/ — skipped if it is already there
+uv run airq.py      # parses, prints one row, one value, its type
+uv run plot.py      # writes out/plot.png
+uv run animate.py   # writes site/index.html — open it in a browser
 ```
