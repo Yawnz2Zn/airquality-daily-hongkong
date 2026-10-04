@@ -1,8 +1,11 @@
 # airquality-daily-hongkong
-Every day of the year as one tile — twelve months down, thirty-one days across,
+
+Every day of 2025 as one tile — twelve months down, thirty-one days across,
 coloured by how much PM2.5 was in the air.
-out/plot.png
-Interactive version
+
+![PM2.5 calendar, Hong Kong, 2025](out/plot.png)
+
+**[Interactive version](https://Yawnz2Zn.github.io/airquality-daily-hongkong/)**
 — scrub the months, hover a square for the raw number.
 # The phenomenon
 
