@@ -5,7 +5,7 @@
 """Draw 2025 as a calendar: 12 months down, 31 days across, one tile per day.
 
 Writes out/plot.png -- the picture the README shows. The interactive version of
-the same numbers is heatmap.py.
+the same numbers is animate.py.
 """
 
 from pathlib import Path
@@ -35,8 +35,13 @@ TEXT = "#eef1fb"
 DIM = "#8d95b2"
 FAINT = "#5d647e"
 
-# deep blue -> steel -> teal -> amber -> red
-RAMP = ["#0a1030", "#1c3b70", "#2f7f9e", "#79c08a", "#f2b45c", "#ff5d5d"]
+# The two ramps must match animate.py, or the PNG and the page disagree.
+# Left, PM2.5: deep blue -> steel -> teal -> amber -> red
+PM_RAMP = [(0.00, "#0a1030"), (0.22, "#1c3b70"), (0.44, "#2f7f9e"),
+           (0.64, "#79c08a"), (0.82, "#f2b45c"), (1.00, "#ff5d5d")]
+# Right, six pollutants normalised: indigo -> violet -> magenta -> peach
+MIX_RAMP = [(0.00, "#0d1330"), (0.30, "#3a3f92"), (0.58, "#8a5cf6"),
+            (0.80, "#e46ab0"), (1.00, "#ffb37a")]
 ACCENT = ["#a9c3ff", "#e3c6ff", "#ffb37a"]
 
 # Pick the first font that exists on this machine. Segoe UI on Windows,
@@ -57,13 +62,22 @@ def calendar(rows):
 
 
 def monthly(rows):
-    """12 x 6 of monthly means, each pollutant normalised to its own range."""
-    grid = np.full((12, 6), np.nan)
+    """12 x 6 of monthly MEANS, each pollutant normalised to its own range.
+
+    The old version did `grid[m, j] = r[f]` inside the loop, which overwrote
+    every day with the next one and left the last day of the month standing in
+    for the mean. Accumulate and divide instead.
+    """
+    accum = np.zeros((12, 6))
+    counts = np.zeros((12, 6))
     for r in rows:
         m = r["date"].month - 1
         for j, f in enumerate(POLLUTANTS):
             if r[f] is not None:
-                grid[m, j] = r[f]
+                accum[m, j] += r[f]
+                counts[m, j] += 1
+    with np.errstate(invalid="ignore"):
+        grid = np.where(counts > 0, accum / np.maximum(counts, 1), np.nan)
     for j in range(6):
         col = grid[:, j]
         good = col[~np.isnan(col)]
@@ -73,11 +87,16 @@ def monthly(rows):
     return grid
 
 
-def heat(ax, grid, title, xlabel, xticks, xlabels, cbar):
-    cmap = LinearSegmentedColormap.from_list("aq", RAMP, N=256)
+def heat(ax, grid, title, xlabel, xticks, xlabels, cbar, ramp, lo=None, hi=None):
+    stops = [s for s, _ in ramp]
+    span = stops[-1] - stops[0]
+    cmap = LinearSegmentedColormap.from_list(
+        "aq", [((s - stops[0]) / span, c) for s, c in ramp], N=256)
     cmap.set_bad(EMPTY)
+    vmin = np.nanmin(grid) if lo is None else lo
+    vmax = np.nanmax(grid) if hi is None else hi
     im = ax.imshow(np.ma.masked_invalid(grid), aspect="auto", cmap=cmap,
-                   vmin=np.nanmin(grid), vmax=np.nanmax(grid))
+                   vmin=vmin, vmax=vmax)
     ax.set_title(title, fontsize=12, color=TEXT, font=FONT,
                  fontweight="bold", pad=11, loc="left")
     ax.set_xlabel(xlabel, fontsize=9.5, color=FAINT, labelpad=6)
@@ -156,12 +175,15 @@ def main():
         card(head, i * (w + gap), 0.0, w, 0.34, k, v, u)
 
     # ---- panels -----------------------------------------------------------
+    # The colour range is shared with animate.py: the day grid spans the lowest
+    # and highest single day, the pollutant panel is always 0 to 1.
+    lo, hi = float(np.nanmin(cal)), float(np.nanmax(cal))
     heat(fig.add_subplot(gs[1, 0]), cal,
          "PM2.5 · one tile per day", "day of month",
-         range(0, 31, 5), range(1, 32, 5), "PM2.5 µg/m³")
+         range(0, 31, 5), range(1, 32, 5), "PM2.5 µg/m³", PM_RAMP, lo, hi)
     heat(fig.add_subplot(gs[1, 1]), monthly(rows),
          "Six pollutants · monthly means", "pollutant",
-         range(6), LABELS, "relative level")
+         range(6), LABELS, "relative level", MIX_RAMP, 0, 1)
 
     fig.text(0.038, 0.028,
              "Each pollutant is scaled to its own range, so the colour bar "
