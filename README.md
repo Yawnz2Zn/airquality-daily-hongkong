@@ -1,20 +1,19 @@
 # airquality-daily-hongkong
+Every day of the year as one tile — twelve months down, thirty-one days across,
+coloured by how much PM2.5 was in the air.
+out/plot.png
+Interactive version
+— scrub the months, hover a square for the raw number.
 # The phenomenon
 
-<!-- This is the SD5913 assignment 2 template. Everything in this file is yours to
-replace, and the check counts words: comments like this one are not words, so
-delete each one as you write. Start with the heading: name the phenomenon.
-
-Then, in this order, at least 150 words in total.
-
-New to folders, paths, or the files here whose names start with a dot? Read
-https://github.com/sd5913/pfad/blob/2026/reference/files.md first. Ten minutes. -->
 
 ![what the picture is](out/plot.png)
 
 ## The phenomenon
-
-<!-- What goes up and down, and why you looked at it. -->
+Fine particulate matter under 2.5 micrometres: small enough to hang in the air for
+days and to reach the lungs, and invisible when it is bad. It is not spread evenly
+over the year — it rides the monsoon. Winter brings continental air down from the
+north and the level climbs; summer brings rain, which washes it out.
 
 ## The source
 
