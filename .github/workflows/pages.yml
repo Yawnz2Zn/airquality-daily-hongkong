@@ -1,12 +1,10 @@
 # Copy this file into your repo as .github/workflows/pages.yml, change the one
-# line marked CHANGE ME, and push. Then, once, on GitHub: Settings â†’ Pages â†’
-# Source: "GitHub Actions". From then on every push runs your script on GitHub's
+# line marked CHANGE ME, and push. Then, once, on GitHub: Settings â†?Pages â†?# Source: "GitHub Actions". From then on every push runs your script on GitHub's
 # machine and publishes whatever it wrote into site/ at
 #
 #     https://YOUR-USERNAME.github.io/YOUR-REPO/
 #
-# The script must write site/index.html. Test it on your own machine first â€”
-# `uv run` it, open site/index.html in a browser â€” because the build here runs
+# The script must write site/index.html. Test it on your own machine first â€?# `uv run` it, open site/index.html in a browser â€?because the build here runs
 # exactly the same command and has no way to fix it for you. Do not commit
 # site/: it is output, and the workflow makes it fresh every time.
 name: Build the page
@@ -28,7 +26,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
       - name: Run the script that writes site/index.html
-        run: uv run currents_web.py            # CHANGE ME to your script
+        run: uv run animate.py                 # writes site/index.html
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site
