@@ -1,15 +1,16 @@
 # /// script
 # requires-python = ">=3.10"
-# dependencies = ["plotly", "pandas", "numpy"]
+# dependencies = ["plotly", "numpy"]
 # ///
-"""Render the cleaned air-quality table as one self-contained animated page.
+"""Render 2025 as one self-contained animated page.
 
 Writes site/index.html -- open it in a browser, or let GitHub Actions publish it.
 No window, no PNG: Python writes the file and stops.
+
+The still version of these same two panels is plot.py.
 """
 
 from pathlib import Path
-import datetime as dt
 import json
 import math
 import re
@@ -25,14 +26,15 @@ HERE = Path(__file__).resolve().parent
 OUT_HTML = HERE / "site" / "index.html"
 
 TITLE = "A Year of Breathing"
-SOURCE = "Hong Kong air-quality open data"
+SOURCE = "Hong Kong air-quality open data · EPD"
+YEAR = 2025
 
 STEP_MS = 900        # one month per step while playing
 HOLD_FRAC = 0.35     # fraction of a step spent resting on the month
 GLIDE_MS = 520       # scrub speed when you jump to a month by hand
 
 FIELDS = ["pm25", "pm10", "o3", "no2", "so2", "co"]
-LABELS = ["PM2.5", "PM10", "O₃", "NO₂", "SO₂", "CO"]
+LABELS = ["PM2.5", "PM10", "O3", "NO2", "SO2", "CO"]
 MONTHS = ["January", "February", "March", "April", "May", "June",
           "July", "August", "September", "October", "November", "December"]
 SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
@@ -55,18 +57,12 @@ MIX_SCALE = [[0.00, "#0d1330"], [0.30, "#3a3f92"], [0.58, "#8a5cf6"],
 
 # ---- the numbers ----------------------------------------------------------
 def calendar_matrix(rows, field):
-    """12 x 31 grid of daily means. Missing days stay NaN."""
+    """12 x 31 grid of daily values. Days with no reading stay NaN."""
     mat = np.full((12, 31), np.nan)
-    counts = np.zeros((12, 31))
     for r in rows:
-        m, d = r["date"].month - 1, r["date"].day - 1
         v = r[field]
-        if v is not None and not np.isnan(v):
-            if counts[m, d] == 0:
-                mat[m, d] = v
-            else:
-                mat[m, d] = (mat[m, d] * counts[m, d] + v) / (counts[m, d] + 1)
-            counts[m, d] += 1
+        if v is not None:
+            mat[r["date"].month - 1, r["date"].day - 1] = v
     return mat
 
 
@@ -77,17 +73,16 @@ def monthly_matrix(rows):
     for r in rows:
         m = r["date"].month - 1
         for j, f in enumerate(FIELDS):
-            v = r[f]
-            if v is not None and not np.isnan(v):
-                accum[m, j] += v
+            if r[f] is not None:
+                accum[m, j] += r[f]
                 counts[m, j] += 1
     with np.errstate(invalid="ignore"):
         return np.where(counts > 0, accum / np.maximum(counts, 1), np.nan)
 
 
 def normalise_columns(mat):
-    """Six pollutants live on six different scales. Put each on 0-1 so one
-    colour bar can hold all of them; the raw value rides along in customdata."""
+    """Six pollutants, six scales. Put each on 0-1 so one colour bar can hold
+    them all; the raw value rides along in customdata."""
     out = np.full(mat.shape, np.nan)
     for j in range(mat.shape[1]):
         col = mat[:, j]
@@ -95,19 +90,13 @@ def normalise_columns(mat):
         if good.size == 0:
             continue
         lo, hi = float(good.min()), float(good.max())
-        span = hi - lo
-        out[:, j] = 0.5 if span == 0 else (col - lo) / span
+        out[:, j] = 0.5 if hi == lo else (col - lo) / (hi - lo)
     return out
 
 
-def js_numbers(mat):
-    """numpy -> JSON, NaN -> null, one decimal is plenty for a tooltip."""
-    return json.dumps([[None if v is None or (isinstance(v, float) and math.isnan(v))
-                        else round(float(v), 2) for v in row] for row in mat])
-
-
 def js_list(seq):
-    return json.dumps([None if (v is None or (isinstance(v, float) and math.isnan(v)))
+    """NaN -> null, two decimals is plenty for a tooltip."""
+    return json.dumps([None if v is None or (isinstance(v, float) and math.isnan(v))
                        else round(float(v), 2) for v in seq])
 
 
@@ -121,7 +110,6 @@ HEAD = """
 :root{
   --bg:#06070e; --txt:#eaeefb; --dim:#8d95b2; --faint:#5d647e;
   --line:rgba(255,255,255,.09);
-  --accent:#8fb0ff; --warm:#ffb37a;
 }
 *{box-sizing:border-box}
 html{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
@@ -205,9 +193,7 @@ body{
 .aq-btn[data-state="playing"] .aq-ico{transform:rotate(90deg)}
 
 .aq-readout{min-width:210px}
-.aq-month{
-  font-family:__DISPLAY__;font-size:17px;font-weight:600;letter-spacing:-.01em;
-}
+.aq-month{font-family:__DISPLAY__;font-size:17px;font-weight:600;letter-spacing:-.01em}
 .aq-readline{display:flex;align-items:baseline;gap:8px;margin-top:2px}
 .aq-value{
   font-family:__MONO__;font-size:30px;font-weight:500;line-height:1;
@@ -244,9 +230,7 @@ body{
 }
 .plotly-graph-div{width:100%!important;height:100%!important}
 
-.aq-foot{
-  margin-top:20px;font-size:11.5px;color:var(--faint);letter-spacing:.04em;
-}
+.aq-foot{margin-top:20px;font-size:11.5px;color:var(--faint);letter-spacing:.04em}
 .aq-foot code{font-family:__MONO__;color:var(--dim)}
 .aq-hint{font-family:__MONO__;font-size:10.5px;color:var(--faint)}
 </style>
@@ -257,11 +241,11 @@ HERO_OPEN = """
   <div class="aq-aurora"></div>
 
   <header class="aq-head">
-    <div class="aq-eyebrow">Hong Kong &middot; Air Quality &middot; __YEAR__</div>
+    <div class="aq-eyebrow">Hong Kong &middot; PM2.5 &middot; __YEAR__</div>
     <h1 class="aq-title">__TITLE__</h1>
     <p class="aq-sub">Every day of __YEAR__ as one tile, scrubbed month by month.
       Left: daily PM2.5 in &micro;g/m&sup3;. Right: six pollutants sharing one
-      colour bar, because each has been normalised to its own annual range &mdash;
+      colour bar, because each has been normalised to its own range &mdash;
       hover any square for the raw number.</p>
   </header>
 
@@ -301,7 +285,7 @@ HERO_CLOSE = """
   </section>
 
   <footer class="aq-foot">
-    __SOURCE__ &middot; rendered offline by Plotly &middot; the raw file lives in <code>data/</code>
+    __SOURCE__ &middot; the raw file lives in <code>data/</code>
     <span class="aq-hint">&nbsp;&nbsp;space = play / pause &nbsp; &larr; &rarr; = step</span>
   </footer>
 </div>
@@ -443,8 +427,6 @@ def main():
     ok = [m for m in range(12) if not math.isnan(means[m])]
     clean_i = min(ok, key=lambda m: means[m]) if ok else None
     peak_i = max(ok, key=lambda m: means[m]) if ok else None
-    year = min(r["date"] for r in rows).year if rows else 2026
-    days_in_year = (dt.date(year, 12, 31) - dt.date(year, 1, 1)).days + 1
 
     zmin = float(np.nanmin(valid)) if valid.size else 0.0
     zmax = float(np.nanmax(valid)) if valid.size else 1.0
@@ -524,13 +506,13 @@ def main():
                 .replace("__BODY__", FONT_BODY)
                 .replace("__MONO__", FONT_MONO))
 
-    hero = (HERO_OPEN.replace("__YEAR__", str(year))
+    hero = (HERO_OPEN.replace("__YEAR__", str(YEAR))
                      .replace("__TITLE__", TITLE)
                      .replace("__ANNUAL__", fmt(annual))
                      .replace("__CLEAN__", SHORT[clean_i] if clean_i is not None else "—")
                      .replace("__PEAK__", SHORT[peak_i] if peak_i is not None else "—")
                      .replace("__DAYS__", str(int(valid.size)))
-                     .replace("__TOTALDAYS__", str(days_in_year))
+                     .replace("__TOTALDAYS__", "365")
                      .replace("__PILLS__", pills))
 
     close = HERO_CLOSE.replace("__SOURCE__", SOURCE)
