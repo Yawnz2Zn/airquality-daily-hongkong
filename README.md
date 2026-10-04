@@ -5,10 +5,9 @@ coloured by how much PM2.5 was in the air.
 
 ![PM2.5 calendar, Hong Kong, 2025](out/plot.png)
 
-**[Interactive version](https://Yawnz2Zn.github.io/airquality-daily-hongkong/)**
+**[Interactive version](https://Yawnz2ZN.github.io/airquality-daily-hongkong/)**
 — scrub the months, hover a square for the raw number.
 # The phenomenon
-
 
 ![what the picture is](out/plot.png)
 
